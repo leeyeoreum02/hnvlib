@@ -1,3 +1,5 @@
+"""MNIST 데이터셋으로 간단한 뉴럴 네트워크를 훈련하고 추론하는 코드입니다.
+"""
 from typing import Dict
 import torch
 from torch import Tensor, nn, optim
@@ -10,6 +12,8 @@ from torchmetrics import Accuracy
 
 
 class NeuralNetwork(nn.Module):
+    """학습과 추론에 사용되는 간단한 뉴럴 네트워크입니다.
+    """
     def __init__(self) -> None:
         super(NeuralNetwork, self).__init__()
         self.flatten = nn.Flatten()
@@ -28,13 +32,18 @@ class NeuralNetwork(nn.Module):
 
 
 def train(dataloader, device, model, loss_fn, optimizer):
-    """뉴럴 네트워크를 훈련합니다.
-    
+    """MNIST 데이터셋으로 뉴럴 네트워크를 훈련합니다.
+
     :param dataloader: 파이토치 데이터로더
+    :type dataloader: DataLoader
     :param device: 훈련에 사용되는 장치
+    :type device: device
     :param model: 훈련에 사용되는 모델
+    :type model: nn.Module
     :param loss_fn: 훈련에 사용되는 오차 함수
+    :type loss_fn: nn.Module
     :param optimizer: 훈련에 사용되는 옵티마이저
+    :type optimizer: Optimizer
     """
     size = len(dataloader.dataset)
     model.train()
@@ -54,6 +63,17 @@ def train(dataloader, device, model, loss_fn, optimizer):
 
 
 def test(dataloader, device, model, loss_fn):
+    """MNIST 데이터셋으로 뉴럴 네트워크의 성능을 테스트합니다.
+
+    :param dataloader: 파이토치 데이터로더
+    :type dataloader: DataLoader
+    :param device: 훈련에 사용되는 장치
+    :type device: device
+    :param model: 훈련에 사용되는 모델
+    :type model: nn.Module
+    :param loss_fn: 훈련에 사용되는 오차 함수
+    :type loss_fn: nn.Module
+    """
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
@@ -71,6 +91,13 @@ def test(dataloader, device, model, loss_fn):
 
 
 def predict(test_data, model):
+    """학습한 뉴럴 네트워크로 MNIST 데이터셋을 분류합니다.
+
+    :param test_data: 추론에 사용되는 데이터셋
+    :type test_data: Dataset
+    :param model: 추론에 사용되는 모델
+    :type model: nn.Module
+    """
     model.eval()
     x = test_data[0][0]
     y = test_data[0][1]
@@ -81,6 +108,13 @@ def predict(test_data, model):
 
 
 def run_pytorch(batch_size, epochs):
+    """학습/추론 파이토치 파이프라인입니다.
+
+    :param batch_size: 학습 및 추론 데이터셋의 배치 크기
+    :type batch_size: int
+    :param epochs: 전체 학습 데이터셋을 훈련하는 횟수
+    :type epochs: int
+    """
     training_data = datasets.MNIST(
         root='data',
         train=True,
@@ -120,6 +154,8 @@ def run_pytorch(batch_size, epochs):
 
 
 class NeuralNetworkModule(pl.LightningModule):
+    """파이토치 라이트닝 모듈
+    """
     def __init__(self) -> None:
         super(NeuralNetworkModule, self).__init__()
         self.model = NeuralNetwork()
@@ -159,6 +195,13 @@ class NeuralNetworkModule(pl.LightningModule):
 
 
 def run_pytorch_lightning(batch_size, epochs):
+    """학습/추론 파이토치 라이트닝 파이프라인입니다.
+
+    :param batch_size: 학습 및 추론 데이터셋의 배치 크기
+    :type batch_size: int
+    :param epochs: 전체 학습 데이터셋을 훈련하는 횟수
+    :type epochs: int
+    """
     training_data = datasets.MNIST(
         root='data',
         train=True,

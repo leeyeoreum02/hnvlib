@@ -154,6 +154,6 @@ dmypy.json
 cython_debug/
 
 # visual studio code settings
-./vscode
+.vscode
 
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks
