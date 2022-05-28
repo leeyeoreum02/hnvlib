@@ -1,2 +1,2 @@
-.. autofunction:: hnvlib.mnist.train
+.. automodule:: hnvlib.mnist
    :noindex:
