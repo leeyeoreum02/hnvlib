@@ -1,14 +1,6 @@
-import re
 from setuptools import setup, find_packages
 
-
-def get_version():
-    with open('hnvlib/__init__.py', 'r') as f:
-        version = re.search(
-            r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-            f.read(), re.MULTILINE
-        ).group(1)
-    return version
+from hnvlib import __version__
 
 
 def get_install_requirements():
@@ -26,7 +18,7 @@ def get_long_description():
 
 setup(
     name='hnvlib',
-    version=get_version(),
+    version=__version__,
     description='Standard code library for HnV Lab.',
     author='Summer Lee',
     maintainer='Summer Lee',

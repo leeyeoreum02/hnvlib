@@ -1,8 +1,0 @@
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "hnvlib"
-authors = [{name = "Summer Lee", email = "leeyeoreum01@gmail.com"}]
-dynamic = ["version", "description"]
