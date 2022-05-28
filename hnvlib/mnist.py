@@ -26,6 +26,13 @@ class NeuralNetwork(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
+        """피드 포워딩
+
+        :param x: 입력 이미지
+        :type x: Tensor
+        :return: 입력 이미지에 대한 예측값
+        :rtype: Tensor
+        """
         x = self.flatten(x)
         logits = self.linear_relu_stack(x)
         return logits
@@ -169,6 +176,15 @@ class NeuralNetworkModule(pl.LightningModule):
         return self.model(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, float]:
+        """뉴럴 네트워크를 한 스텝 훈련합니다.
+
+        :param batch: 훈련 데이터셋의 배치 크기
+        :type batch: int
+        :param batch_idx: 배치에 대한 인덱스
+        :type batch_idx: int
+        :return: 훈련 오차 데이터
+        :rtype: Dict[str, float]
+        """
         X, y = batch
 
         pred = self(X)
@@ -179,6 +195,15 @@ class NeuralNetworkModule(pl.LightningModule):
         return {'loss': loss}
 
     def validation_step(self, batch: Tensor, batch_idx: int) -> Dict[str, float]:
+        """훈련 후 한 배치를 검증합니다.
+
+        :param batch: 검증 데이터셋의 배치 크기
+        :type batch: int
+        :param batch_idx: 배치에 대한 인덱스
+        :type batch_idx: int
+        :return: 검증 오차 데이터
+        :rtype: Dict[str, float]
+        """
         X, y = batch
 
         pred = self(X)
