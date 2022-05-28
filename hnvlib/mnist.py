@@ -173,6 +173,13 @@ class NeuralNetworkModule(pl.LightningModule):
         return optim.SGD(self.parameters(), lr=0.01, momentum=0.9)
 
     def forward(self, x: Tensor) -> Tensor:
+        """피드 포워딩
+
+        :param x: 입력 이미지
+        :type x: Tensor
+        :return: 입력 이미지에 대한 예측값
+        :rtype: Tensor
+        """
         return self.model(x)
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, float]:
