@@ -1,2 +1,2 @@
-.. automodule:: mnist
+.. automodule:: hnvlib.mnist
    :members:
