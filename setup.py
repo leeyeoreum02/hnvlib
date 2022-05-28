@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 
 def get_version():
-    with open('yolox/__init__.py', 'r') as f:
+    with open('hnvlib/__init__.py', 'r') as f:
         version = re.search(
             r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
             f.read(), re.MULTILINE
@@ -25,7 +25,7 @@ def get_long_description():
 
 
 setup(
-    name='hnvcode',
+    name='hnvlib',
     version=get_version(),
     description='Standard code library for HnV Lab.',
     author='Summer Lee',
