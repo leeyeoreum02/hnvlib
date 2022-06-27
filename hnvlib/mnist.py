@@ -12,7 +12,7 @@ from torchmetrics import Accuracy
 
 
 _device = TypeVar('_device')
-_Optimizer = torch.optim.optimizer._Optimizer
+_Optimizer = torch.optim.Optimizer
 
 class NeuralNetwork(nn.Module):
     """학습과 추론에 사용되는 간단한 뉴럴 네트워크입니다.
@@ -53,7 +53,7 @@ def train(dataloader: DataLoader, device: _device, model: nn.Module, loss_fn: nn
     :param loss_fn: 훈련에 사용되는 오차 함수
     :type loss_fn: nn.Module
     :param optimizer: 훈련에 사용되는 옵티마이저
-    :type optimizer: torch.optim.optimizer._Optimizer
+    :type optimizer: torch.optim.Optimizer
     """
     size = len(dataloader.dataset)
     model.train()
@@ -176,7 +176,7 @@ class NeuralNetworkModule(pl.LightningModule):
         """옵티마이저를 정의합니다.
         
         :return: 파이토치 옵티마이저
-        :rtype: torch.optim.optimizer._Optimizer
+        :rtype: torch.optim.Optimizer
         """
         return optim.SGD(self.parameters(), lr=0.01, momentum=0.9)
 
