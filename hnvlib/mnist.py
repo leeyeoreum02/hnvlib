@@ -1,15 +1,18 @@
 """MNIST 데이터셋으로 간단한 뉴럴 네트워크를 훈련하고 추론하는 코드입니다.
 """
-from typing import Dict
+from typing import Dict, List, TypeVar
 import torch
 from torch import Tensor, nn, optim
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from torchmetrics import Accuracy
 
+
+_device = TypeVar('_device')
+_Optimizer = torch.optim._Optimizer
 
 class NeuralNetwork(nn.Module):
     """학습과 추론에 사용되는 간단한 뉴럴 네트워크입니다.
@@ -26,7 +29,7 @@ class NeuralNetwork(nn.Module):
         )
 
     def forward(self, x: Tensor) -> Tensor:
-        """피드 포워딩
+        """피드 포워드(순전파)를 진행하는 함수입니다.
 
         :param x: 입력 이미지
         :type x: Tensor
@@ -38,19 +41,19 @@ class NeuralNetwork(nn.Module):
         return logits
 
 
-def train(dataloader, device, model, loss_fn, optimizer):
+def train(dataloader: DataLoader, device: _device, model: nn.Module, loss_fn: nn.Module, optimizer: _Optimizer) -> None:
     """MNIST 데이터셋으로 뉴럴 네트워크를 훈련합니다.
 
     :param dataloader: 파이토치 데이터로더
     :type dataloader: DataLoader
     :param device: 훈련에 사용되는 장치
-    :type device: device
+    :type device: _device
     :param model: 훈련에 사용되는 모델
     :type model: nn.Module
     :param loss_fn: 훈련에 사용되는 오차 함수
     :type loss_fn: nn.Module
     :param optimizer: 훈련에 사용되는 옵티마이저
-    :type optimizer: Optimizer
+    :type optimizer: torch.optim._Optimizer
     """
     size = len(dataloader.dataset)
     model.train()
@@ -69,13 +72,13 @@ def train(dataloader, device, model, loss_fn, optimizer):
             print(f'loss: {loss:>7f}  [{current:>5d}/{size:>5d}]')
 
 
-def test(dataloader, device, model, loss_fn):
+def test(dataloader: DataLoader, device: _device, model: nn.Module, loss_fn: nn.Module) -> None:
     """MNIST 데이터셋으로 뉴럴 네트워크의 성능을 테스트합니다.
 
     :param dataloader: 파이토치 데이터로더
     :type dataloader: DataLoader
     :param device: 훈련에 사용되는 장치
-    :type device: device
+    :type device: _device
     :param model: 훈련에 사용되는 모델
     :type model: nn.Module
     :param loss_fn: 훈련에 사용되는 오차 함수
@@ -97,7 +100,7 @@ def test(dataloader, device, model, loss_fn):
     print(f'Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n')
 
 
-def predict(test_data, model):
+def predict(test_data: Dataset, model: nn.Module) -> None:
     """학습한 뉴럴 네트워크로 MNIST 데이터셋을 분류합니다.
 
     :param test_data: 추론에 사용되는 데이터셋
@@ -114,7 +117,7 @@ def predict(test_data, model):
         print(f'Predicted: {predicted}, Actual: {actual}')
 
 
-def run_pytorch(batch_size, epochs):
+def run_pytorch(batch_size: int, epochs: int) -> None:
     """학습/추론 파이토치 파이프라인입니다.
 
     :param batch_size: 학습 및 추론 데이터셋의 배치 크기
@@ -161,7 +164,7 @@ def run_pytorch(batch_size, epochs):
 
 
 class NeuralNetworkModule(pl.LightningModule):
-    """파이토치 라이트닝 모듈
+    """모델과 학습/추론 코드가 포함된 파이토치 라이트닝 모듈입니다.
     """
     def __init__(self) -> None:
         super(NeuralNetworkModule, self).__init__()
@@ -169,7 +172,12 @@ class NeuralNetworkModule(pl.LightningModule):
         self.loss_fn = nn.CrossEntropyLoss()
         self.metric = Accuracy(num_classes=10)
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> _Optimizer:
+        """옵티마이저를 정의합니다.
+        
+        :return: 파이토치 옵티마이저
+        :rtype: torch.optim._Optimizer
+        """
         return optim.SGD(self.parameters(), lr=0.01, momentum=0.9)
 
     def forward(self, x: Tensor) -> Tensor:
@@ -221,12 +229,17 @@ class NeuralNetworkModule(pl.LightningModule):
 
         return {'val_loss': loss}
 
-    def validation_epoch_end(self, outputs) -> None:
+    def validation_epoch_end(self, outputs: List[Tensor]) -> None:
+        """한 에폭 검증을 마치고 실행되는 코드입니다.
+        
+        :param outputs: 함수 validation_step에서 반환한 값들을 한 에폭이 끝나는 동안 모은 값들의 집합
+        :type outputs: List[Tensor]
+        """
         self.log('val_acc', self.metric.compute(), prog_bar=True)
         self.metric.reset()
 
 
-def run_pytorch_lightning(batch_size, epochs):
+def run_pytorch_lightning(batch_size: int, epochs: int) -> None:
     """학습/추론 파이토치 라이트닝 파이프라인입니다.
 
     :param batch_size: 학습 및 추론 데이터셋의 배치 크기
