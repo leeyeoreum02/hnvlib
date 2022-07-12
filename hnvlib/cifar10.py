@@ -15,6 +15,7 @@ from torchmetrics import Accuracy
 _device = TypeVar('_device')
 _Optimizer = torch.optim.Optimizer
 
+
 class Net(nn.Module):
     """학습과 추론에 사용되는 간단한 뉴럴 네트워크입니다.
     """
