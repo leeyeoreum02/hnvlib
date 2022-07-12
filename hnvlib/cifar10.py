@@ -1,11 +1,12 @@
-"""MNIST 데이터셋으로 간단한 뉴럴 네트워크를 훈련하고 추론하는 코드입니다.
+"""CIFAR-10 데이터셋으로 간단한 뉴럴 네트워크를 훈련하고 추론하는 코드입니다.
 """
+
 from typing import Dict, List, TypeVar
 import torch
 from torch import Tensor, nn, optim
 from torch.utils.data import Dataset, DataLoader
-from torchvision import datasets
-from torchvision.transforms import ToTensor
+import torch.nn.functional as F
+from torchvision import transforms, datasets
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 from torchmetrics import Accuracy
@@ -14,20 +15,17 @@ from torchmetrics import Accuracy
 _device = TypeVar('_device')
 _Optimizer = torch.optim.Optimizer
 
-
-class NeuralNetwork(nn.Module):
+class Net(nn.Module):
     """학습과 추론에 사용되는 간단한 뉴럴 네트워크입니다.
     """
     def __init__(self) -> None:
-        super(NeuralNetwork, self).__init__()
-        self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(28*28, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 10),
-        )
+        super().__init__()
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
 
     def forward(self, x: Tensor) -> Tensor:
         """피드 포워드(순전파)를 진행하는 함수입니다.
@@ -37,9 +35,13 @@ class NeuralNetwork(nn.Module):
         :return: 입력 이미지에 대한 예측값
         :rtype: Tensor
         """
-        x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
-        return logits
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 
 def train(dataloader: DataLoader, device: _device, model: nn.Module, loss_fn: nn.Module, optimizer: _Optimizer) -> None:
@@ -109,13 +111,26 @@ def predict(test_data: Dataset, model: nn.Module) -> None:
     :param model: 추론에 사용되는 모델
     :type model: nn.Module
     """
+    classes = [
+        'plane',
+        'car',
+        'bird',
+        'cat',
+        'deer',
+        'dog',
+        'frog',
+        'horse',
+        'ship',
+        'truck',
+    ]
+
     model.eval()
-    x = test_data[0][0]
+    x = test_data[0][0].unsqueeze(0)
     y = test_data[0][1]
     with torch.no_grad():
         pred = model(x)
-        predicted, actual = pred[0].argmax(0), y
-        print(f'Predicted: {predicted}, Actual: {actual}')
+        predicted, actual = classes[pred[0].argmax(0)], classes[y]
+        print(f'Predicted: "{predicted}", Actual: "{actual}"')
 
 
 def run_pytorch(batch_size: int, epochs: int) -> None:
@@ -126,18 +141,23 @@ def run_pytorch(batch_size: int, epochs: int) -> None:
     :param epochs: 전체 학습 데이터셋을 훈련하는 횟수
     :type epochs: int
     """
-    training_data = datasets.MNIST(
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+    training_data = datasets.CIFAR10(
         root='data',
         train=True,
         download=True,
-        transform=ToTensor(),
+        transform=transform,
     )
 
-    test_data = datasets.MNIST(
+    test_data = datasets.CIFAR10(
         root='data',
         train=False,
         download=True,
-        transform=ToTensor(),
+        transform=transform,
     )
 
     train_dataloader = DataLoader(training_data, batch_size=batch_size, num_workers=16)
@@ -145,7 +165,7 @@ def run_pytorch(batch_size: int, epochs: int) -> None:
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    model = NeuralNetwork().to(device)
+    model = Net().to(device)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
@@ -156,20 +176,20 @@ def run_pytorch(batch_size: int, epochs: int) -> None:
         test(test_dataloader, device, model, loss_fn)
     print('Done!')
 
-    torch.save(model.state_dict(), 'model.pth')
-    print('Saved PyTorch Model State to model.pth')
+    torch.save(model.state_dict(), 'cifar_net.pth')
+    print('Saved PyTorch Model State to cifar_net.pth')
 
-    model = NeuralNetwork()
-    model.load_state_dict(torch.load('model.pth'))
+    model = Net()
+    model.load_state_dict(torch.load('cifar_net.pth'))
     predict(test_data, model)
 
 
-class NeuralNetworkModule(pl.LightningModule):
+class NetModule(pl.LightningModule):
     """모델과 학습/추론 코드가 포함된 파이토치 라이트닝 모듈입니다.
     """
     def __init__(self) -> None:
-        super(NeuralNetworkModule, self).__init__()
-        self.model = NeuralNetwork()
+        super(NetModule, self).__init__()
+        self.model = Net()
         self.loss_fn = nn.CrossEntropyLoss()
         self.metric = Accuracy(num_classes=10)
 
@@ -248,31 +268,36 @@ def run_pytorch_lightning(batch_size: int, epochs: int) -> None:
     :param epochs: 전체 학습 데이터셋을 훈련하는 횟수
     :type epochs: int
     """
-    training_data = datasets.MNIST(
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
+
+    training_data = datasets.CIFAR10(
         root='data',
         train=True,
         download=True,
-        transform=ToTensor(),
+        transform=transform,
     )
 
-    test_data = datasets.MNIST(
+    test_data = datasets.CIFAR10(
         root='data',
         train=False,
         download=True,
-        transform=ToTensor(),
+        transform=transform,
     )
 
     train_dataloader = DataLoader(training_data, batch_size=batch_size, num_workers=16)
     test_dataloader = DataLoader(test_data, batch_size=batch_size, num_workers=8)
 
-    model = NeuralNetworkModule()
+    model = NetModule()
     trainer = Trainer(max_epochs=epochs, gpus=1)
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=test_dataloader)
 
-    trainer.save_checkpoint('model.ckpt')
-    print('Saved PyTorch Lightning Model State to model.ckpt')
+    trainer.save_checkpoint('cifar_net.ckpt')
+    print('Saved PyTorch Lightning Model State to cifar_net.ckpt')
 
-    model = NeuralNetworkModule.load_from_checkpoint(checkpoint_path='model.ckpt')
+    model = NetModule.load_from_checkpoint(checkpoint_path='cifar_net.ckpt')
     predict(test_data, model)
 
 
